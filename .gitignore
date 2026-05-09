@@ -1,0 +1,32 @@
+# === Quartus Hardware Project Junk ===
+# Database di sintesi e fitting
+db/
+incremental_db/
+
+# File di output (Bitstream, log, report)
+output_files/
+*.rpt
+*.summary
+*.jdi
+*.pin
+*.done
+*.qws
+*.smsg
+
+# File temporanei e backup di Quartus
+greybox_tmp/
+hc_output/
+.qsys_edit/
+*.bak
+*.vhd.bak
+*.txt.bak
+
+# === Simulation (ModelSim / QuestaSim) ===
+simulation/
+transcript
+vsim.wlf
+work/
+
+# === System ===
+.DS_Store
+Thumbs.db

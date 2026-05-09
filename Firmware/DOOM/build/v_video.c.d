@@ -1,0 +1,25 @@
+build/v_video.c.o: doomgeneric/v_video.c doomgeneric/i_system.h \
+ doomgeneric/d_ticcmd.h doomgeneric/doomtype.h doomgeneric/d_event.h \
+ doomgeneric/deh_str.h doomgeneric/doomfeatures.h doomgeneric/i_swap.h \
+ doomgeneric/i_video.h doomgeneric/m_bbox.h doomgeneric/m_fixed.h \
+ doomgeneric/m_misc.h doomgeneric/v_video.h doomgeneric/v_patch.h \
+ doomgeneric/w_wad.h doomgeneric/d_mode.h doomgeneric/w_file.h \
+ doomgeneric/z_zone.h doomgeneric/config.h
+doomgeneric/i_system.h:
+doomgeneric/d_ticcmd.h:
+doomgeneric/doomtype.h:
+doomgeneric/d_event.h:
+doomgeneric/deh_str.h:
+doomgeneric/doomfeatures.h:
+doomgeneric/i_swap.h:
+doomgeneric/i_video.h:
+doomgeneric/m_bbox.h:
+doomgeneric/m_fixed.h:
+doomgeneric/m_misc.h:
+doomgeneric/v_video.h:
+doomgeneric/v_patch.h:
+doomgeneric/w_wad.h:
+doomgeneric/d_mode.h:
+doomgeneric/w_file.h:
+doomgeneric/z_zone.h:
+doomgeneric/config.h:

@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<WORKSPACE>
+ <FRAME activeWindow="2">
+  <PLACEMENT>01d9d0cb00030000fffffffffffffff80000077e0000042f00000000000000170000077d0000042e0000000000000000078000000000000000170000077d0000042e</PLACEMENT>
+  <WINDOW type="default" index="0" module="ISIS" mode="00050a36"/>
+  <WINDOW type="default" index="0" module="ARES" mode="00060a00"/>
+  <WINDOW type="default" index="0" module="STARTUP" mode="00060a00"/>
+ </FRAME>
+ <MODULE name="ARES">
+  <editor scale="10" gridminor="0" gridmajor="0" orgmode="0" snap="0" snapidx="3" gridmode="2" xcursor="32" snaprange="0" zoom="10" metric="1" flipped="0">
+   <centre x="0" y="0"/>
+   <origin x="0" y="0"/>
+   <world x2="15240000" y1="-12700000" y2="12700000" x1="-15240000"/>
+  </editor>
+ </MODULE>
+ <MODULE name="VSMDEBUG">
+  <PWI/>
+ </MODULE>
+ <MODULE name="VSMEDIT">
+  <EDITOR/>
+ </MODULE>
+ <MODULE name="ISIS">
+  <editor scale="91" gridminor="254000" gridmajor="2540000" orgmode="0" snap="127000" snapidx="1" gridmode="2" xcursor="32" snaprange="139560" zoom="0" metric="0" flipped="0">
+   <centre x="0" y="0"/>
+   <origin x="0" y="0"/>
+   <world x2="19050000" y1="-12700000" y2="12700000" x1="-19050000"/>
+  </editor>
+ </MODULE>
+</WORKSPACE>
