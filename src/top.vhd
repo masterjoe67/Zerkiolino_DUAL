@@ -64,7 +64,7 @@ entity top is
     PS2_DAT_PIN		: in  std_logic;
 	
 	-- VGA
-	vga_bus_adr : out std_logic_vector(2 downto 0);
+	vga_bus_adr : out std_logic_vector(3 downto 0);
 	vga_bus_dat : out std_logic_vector(15 downto 0);
 	vga_bus_we  : out std_logic;
 	vga_busy    : in std_logic;

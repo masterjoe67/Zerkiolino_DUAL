@@ -86,6 +86,12 @@ FRESULT load_wad_to_sdram(const char* filename) {
 
     neorv32_uart0_printf("SDRAM1: Caricamento in corso a 0x%x\n", current_ptr);
 
+    vga_setTextColor(WHITE, 0x0000);
+    vga_set_cursor(200, 250);
+    vga_setTextSize(3);
+    vga_Print("LOADING... ");
+    vga_set_cursor(10, 300);
+    vga_setTextSize(2);
     // Leggiamo finché c'è roba nel file (br > 0)
     while (1) {
         res = pf_read(buffer, sizeof(buffer), &br);
@@ -101,8 +107,9 @@ FRESULT load_wad_to_sdram(const char* filename) {
         total_written += (uint32_t)br;
         
         // Feedback ogni 64KB per non intasare la UART ma sapere che vive
-        if ((total_written % 65536) == 0) {
+        if ((total_written % 131072) == 0) {
             neorv32_uart0_printf("#"); 
+            vga_Print("#");
         }
     }
 
@@ -110,30 +117,7 @@ FRESULT load_wad_to_sdram(const char* filename) {
     return res;
 }
 
-void test_timer_100mhz(void) {
-    uint64_t t_start, t_end;
-    uint32_t sec = 0;
 
-    neorv32_uart0_printf("\n--- TEST TIMER HARDWARE (Clock: 100MHz) ---\n");
-    neorv32_uart0_printf("Attendo 5 secondi...\n");
-
-    for(sec = 1; sec <= 5; sec++) {
-        t_start = neorv32_clint_time_get();
-        
-        // Aspettiamo 100.000.000 di cicli (esattamente 1 secondo a 100MHz)
-        // Usiamo un loop che non venga ottimizzato via
-        while (1) {
-            t_end = neorv32_clint_time_get();
-            if ((t_end - t_start) >= 100000000ULL) {
-                break;
-            }
-        }
-        neorv32_uart0_printf("Secondo: %d (Delta cicli: %llu)\n", sec, (t_end - t_start));
-    }
-
-    neorv32_uart0_printf("Test completato. Se i messaggi sono apparsi ogni secondo reale, il timer e' OK.\n");
-    neorv32_uart0_printf("-------------------------------------------\n\n");
-}
 
 /*=======================================================================*/
 /* Main                                                                  */
@@ -144,19 +128,19 @@ int main() {
    OutputBootMessage();
    setup_pmp_for_doom(); // Configura il PMP per Doom (SDRAM cacheable, IO bypass)
    neorv32_gpio_port_set(0);
-  // test_timer_100mhz(); // Test del timer prima di tutto, così sei sicuro che funziona
+
 
     // Inizializza la VGA (se non già fatto nel bootloader)
    vga_set_write_page(0);
    vga_set_read_page(0);
    vga_setTextColor(RED, 0x0000);
+   vga_setTextFont(1);
+   vga_setTextSize(2);
    vga_set_cursor(10, 10);
    vga_clear(BLACK);
-   vga_set_write_page(1);
-   vga_clear(BLACK);
-   vga_set_write_page(0);
+
    vga_Print("Zerkiolino loadin WAD... ");
-    // vga_init(); 
+   vga_load_image_pfs("ZERK.BIN");
 
     // 2. Caricamento WAD (Esempio se lo hai in SDRAM)
    if (pf_mount(&fs) == FR_OK) {
@@ -164,6 +148,10 @@ int main() {
         load_wad_to_sdram("DOOM1.WAD");
     }
     
+    vga_set_write_page(1);
+    vga_clear(BLACK);
+    vga_set_write_page(0);
+    vga_clear(BLACK);
     // 3. Lancio di Doom
     // Passiamo degli argomenti "finti" per simulare la riga di comando
     char *argv[] = {"doom", "-iwad", "doom1.wad", "-window"};
