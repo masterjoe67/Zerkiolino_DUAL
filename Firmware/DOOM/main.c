@@ -87,10 +87,10 @@ FRESULT load_wad_to_sdram(const char* filename) {
     neorv32_uart0_printf("SDRAM1: Caricamento in corso a 0x%x\n", current_ptr);
 
     vga_setTextColor(WHITE, 0x0000);
-    vga_set_cursor(200, 250);
+    vga_set_cursor(250, 380);
     vga_setTextSize(3);
     vga_Print("LOADING... ");
-    vga_set_cursor(10, 300);
+    vga_set_cursor(10, 420);
     vga_setTextSize(2);
     // Leggiamo finché c'è roba nel file (br > 0)
     while (1) {

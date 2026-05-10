@@ -9,6 +9,7 @@
 #include "petit_fatfs/pff.h"
 #include "vga/vga.h"
 #include "PS2_Keyboard/ps2_kbd.h"
+#include <math.h>
 
 /*=======================================================================*/
 /* Configuration & Constants                                             */
@@ -181,7 +182,39 @@ void test_vga_scaling() {
     }
 }
 
+// Parametri della funzione
+#define SCALE 20.0f
+#define SPEED 0.1f
 
+void draw_3d_function(float time) {
+    int last_sx = -1, last_sy = -1;
+
+    // Cicliamo su una griglia X, Y "mondo"
+    for (float x = -10.0f; x < 10.0f; x += 0.4f) {
+        for (float y = -10.0f; y < 10.0f; y += 0.4f) {
+            
+            // 1. Calcolo della funzione (Sinc circolare)
+            float d = sqrtf(x*x + y*y);
+            float z = 5.0f * sinf(d - time) / (d + 0.5f); // +0.5 per evitare div by zero
+
+            // 2. Proiezione Isometrica Semplice (3D -> 2D)
+            // Trasformiamo coordinate (x, y, z) in (screen_x, screen_y)
+            int sx = (int)((x - y) * cosf(0.523f) * SCALE) + (SCREEN_WIDTH / 2);
+            int sy = (int)((x + y) * sinf(0.523f) * SCALE - (z * SCALE)) + (SCREEN_HEIGHT / 2);
+
+            // 3. Shading base (opzionale)
+            // Più è alto Z, più il colore è tendente al rosso/giallo
+            uint16_t color = (uint16_t)(z * 1000) + 0x07E0; // Esempio colore dinamico
+
+            if (sx >= 0 && sx < SCREEN_WIDTH && sy >= 0 && sy < SCREEN_HEIGHT) {
+                vga_put_pixel(sx, sy, color);
+            }
+        }
+    }
+}
+
+static uint8_t back_buffer_page = 1; // Pagina su cui DOOM disegna
+static uint8_t front_buffer_page = 0; // Pagina visualizzata sul monitor
 
 /*=======================================================================*/
 /* Main Loop                                                             */
@@ -201,7 +234,23 @@ int main (void) {
     vga_setTextColor(RED, 0x0000);
     vga_set_cursor(0, 0);
     vga_clear(BLACK);
+
     vga_Print("Zerkiolino RISC-V VGA Test ");
+
+
+    float t = 0;
+    while(1) {
+        vga_set_write_page(back_buffer_page);
+        vga_clear(BLACK); // Pulisce il buffer SDRAM
+        draw_3d_function(t);
+        t += SPEED;
+        vga_set_read_page(back_buffer_page);
+        uint8_t temp = front_buffer_page;
+        front_buffer_page = back_buffer_page;
+        back_buffer_page = temp;
+    }
+
+
     test_vga_scaling();
     
     test_autoincrement();
