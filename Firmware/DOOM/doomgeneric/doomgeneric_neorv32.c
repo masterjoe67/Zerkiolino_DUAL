@@ -1,6 +1,8 @@
 #include "doomgeneric.h"
 #include "neorv32.h"
 #include "doomgeneric_neorv32.h"
+#include "i_sound_neorv32.h"
+#include "i_sound.h"
 #include "../petit_fatfs/pff.h"
 #include "../vga/vga.h"
 
@@ -13,7 +15,7 @@ void I_GetEvent(void);
 
 void DG_Init() {
     // 1. Inizializza le tue periferiche (se non già fatto nel bootloader)
-    // neorv32_uart0_printf("DG_Init: Caricamento WAD...\n");
+    neorv32_uart0_printf("DG_Init: Caricamento WAD...\n");
 
     // 2. Caricamento integrale del WAD in SDRAM 1
     UINT br;
@@ -25,6 +27,8 @@ void DG_Init() {
         // Errore critico: se non c'è il WAD, Doom non parte
         while(1); 
     }
+
+    I_SDL_InitSound(true);
 }
 
 
@@ -67,45 +71,7 @@ void vga_blit_to_subsystem(uint8_t* source, uint32_t size) {
 static uint8_t back_buffer_page = 1; // Pagina su cui DOOM disegna
 static uint8_t front_buffer_page = 0; // Pagina visualizzata sul monitor
 
-void DG_DrawFrame2() {
-    I_GetEvent();
-    // 1. Puntiamo alla pagina di scrittura (Back Buffer)
-    vga_set_write_page(back_buffer_page);
 
-    // 2. Il buffer è già RGB565 e già scalato a 640x400 da I_FinishUpdate
-    uint16_t *pixel_buffer = (uint16_t *)DG_ScreenBuffer; 
-
-    uint16_t *pixel_ptr = (uint16_t *)pixel_buffer;
-
-    // Ciclo sulle dimensioni REALI del buffer di uscita
-    VGA_REG_MODE = 0x0001; // Modalità di scrittura rapida (es. auto-incremento)
-    for (uint16_t y = 0; y < 400; y++) {
-        VGA_REG_Y = y;
-        VGA_REG_X = 0; // Iniziamo da x=0 per ogni riga
-        for (uint16_t x = 0; x < 640; x++) {
-            // Leggiamo il pixel (x, y) dal buffer scalato 640x400
-            // L'indice deve riflettere la larghezza reale (640)
-            //uint16_t color = pixel_buffer[y * 640 + x];
-                uint16_t color = *pixel_ptr++;
-                //while (VGA_IS_BUSY);
-                //VGA_REG_X = x;
-                VGA_REG_COLOR = color; // Invia i 16 bit colore in un colpo solo
-    
-                VGA_STROBE = 1; // Lo strobe fa scattare il mapping Bank0/Bank1 nel VHDL
-
-            // Inviamo il pixel alla VGA nelle coordinate reali
-            //vga_put_pixel(x, y, color);
-        }
-    }
-    VGA_REG_MODE = 0x0000; // Torniamo alla modalità normale
-    // 3. Flip: visualizziamo la pagina appena riempita
-    vga_set_read_page(back_buffer_page);
-
-    // 4. Swap: scambiamo le pagine per il prossimo frame
-    uint8_t temp = front_buffer_page;
-    front_buffer_page = back_buffer_page;
-    back_buffer_page = temp;
-}
 
 void DG_DrawFrame() {
     I_GetEvent();

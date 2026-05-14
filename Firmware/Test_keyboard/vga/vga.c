@@ -466,3 +466,76 @@ int vga_drawChar(unsigned int uniCode, int x, int y, int font) {
     return width * textsize;
 }
 
+/********************************************************** */
+// Variabili di stato globali
+int hardware_offset = 0;
+int terminal_row = 0;
+int terminal_col = 0; // Nuova variabile per tracciare la colonna
+int font_h = 16;
+int font_w = 8;       // Larghezza standard font
+int max_rows;
+
+void vga_terminal_init(int h) {
+    font_h = h;
+    max_rows = 480 / font_h;
+    terminal_row = 0;
+    terminal_col = 0;
+    hardware_offset = 0;
+    VGA_REG_SCROLL = 0;
+    vga_fillRect(0, 0, 640, 480, 0x0000);
+}
+
+void vga_terminal_putc(char c) {
+    // 1. Gestione del ritorno a capo (INVIO o fine riga)
+    if (c == '\r' || c == '\n' || terminal_col >= (640 / font_w)) {
+        terminal_col = 0;
+        terminal_row++;
+
+        // 2. Controllo Scroll Hardware
+        if (terminal_row >= max_rows) {
+            hardware_offset = (hardware_offset + font_h) % 480;
+            VGA_REG_SCROLL = hardware_offset;
+
+            // Pulizia della nuova riga rullata dal basso
+            int y_to_clear = (hardware_offset + ((max_rows - 1) * font_h)) % 480;
+            vga_fillRect(0, y_to_clear, 640, font_h, 0x0000);
+            
+            terminal_row = max_rows - 1;
+        }
+        
+        // Se era solo un carattere di fine riga automatica, usciamo qui
+        if (c == '\r' || c == '\n') return;
+    }
+
+    // 3. Stampa del carattere singolo
+    if (c >= 32 && c <= 126) { // Solo caratteri stampabili
+        char str[2] = {c, '\0'};
+        int x_phys = terminal_col * font_w;
+        int y_phys = (hardware_offset + (terminal_row * font_h)) % 480;
+
+        vga_set_cursor(x_phys, y_phys);
+        vga_Print(str);
+        
+        terminal_col++;
+    }
+}
+
+/**
+ * Stampa una stringa sul terminale VGA carattere per carattere.
+ * Gestisce automaticamente lo scroll e il wrapping.
+ */
+void vga_terminal_print(const char* s) {
+    while (*s) {
+        vga_terminal_putc(*s++);
+    }
+}
+
+/**
+ * Stampa una stringa e aggiunge un ritorno a capo.
+ */
+void vga_terminal_println(const char* s) {
+    vga_terminal_print(s);
+    vga_terminal_putc('\n');
+}
+
+

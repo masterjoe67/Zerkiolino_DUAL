@@ -23,56 +23,46 @@ entity vga_xbus_gateway is
 end entity;
 
 architecture rtl of vga_xbus_gateway is
-    signal shot_fired : std_logic := '0';
-    signal ack_q      : std_logic := '0';
+    signal ack_q : std_logic := '0';
 begin
     xbus_ack_o <= ack_q;
-    
-    -- Legge lo stato busy sul bit 0
     xbus_data_o <= (0 => vga_busy_i, others => '0');
 
     process(clk, rst_n)
-        variable current_cmd : std_logic_vector(3 downto 0); -- Portato a 4 bit
+        variable current_cmd : std_logic_vector(3 downto 0);
     begin
         if rst_n = '0' then
             vga_st_o     <= '0';
             vga_st_cmd_o <= '0';
-            shot_fired   <= '0';
             ack_q        <= '0';
             vga_data_o   <= (others => '0');
             vga_cmd_o    <= (others => '0');
         elsif rising_edge(clk) then
-            -- Reset automatico degli strobi
+            -- Reset automatico degli strobi (durano 1 solo clock)
             vga_st_o     <= '0';
             vga_st_cmd_o <= '0';
-            
-            -- Gestione ACK
-            ack_q <= (xbus_st_i and xbus_cy_i) and (not ack_q);
 
+            -- Logica di Handshake Wishbone pulita
             if (xbus_st_i = '1' and xbus_cy_i = '1') then
-                if xbus_we_i = '1' then
-                    vga_data_o <= xbus_data_i(15 downto 0);
-                    
-                    -- Prendiamo 4 bit dall'indirizzo (offset 2, 3, 4, 5)
-                    -- In questo modo mappiamo gli indirizzi 0x00, 0x04, 0x08... fino a 0x3C
-                    current_cmd := xbus_addr_i(5 downto 2); 
-                    vga_cmd_o  <= current_cmd;
+                if ack_q = '0' then
+                    -- Primo ciclo del trasferimento: eseguiamo l'azione
+                    ack_q <= '1'; 
+                    if xbus_we_i = '1' then
+                        vga_data_o <= xbus_data_i(15 downto 0);
+                        current_cmd := xbus_addr_i(5 downto 2);
+                        vga_cmd_o  <= current_cmd;
 
-                    if shot_fired = '0' then
-                        -- LOGICA DI DISCRIMINAZIONE
-                        if current_cmd = "0110" then    -- 0x18 (Indirizzo vecchio 6)
-                            vga_st_o <= '1';            -- STROBE PIXEL
-                        elsif current_cmd = "1000" then -- 0x20 (Nuovo indirizzo Audio!)
-                            vga_st_cmd_o <= '1';        -- STROBE AUDIO
+                        -- Distribuzione Strobi
+                        if current_cmd = "0110" then    -- 0x18 (Pixel)
+                            vga_st_o <= '1';
                         else
-                            vga_st_cmd_o <= '1';        -- Tutti gli altri (0x04-0x1C)
+                            vga_st_cmd_o <= '1';        -- Tutti gli altri (incluso Scroll 0x9)
                         end if;
-                        shot_fired <= '1';
                     end if;
                 end if;
+                -- Se ack_q è già 1, resta a 1 finché xbus_st_i non scende (Wait state)
             else
-                shot_fired <= '0';
-                ack_q      <= '0';
+                ack_q <= '0';
             end if;
         end if;
     end process;

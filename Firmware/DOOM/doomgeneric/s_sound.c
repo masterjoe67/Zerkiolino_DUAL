@@ -78,7 +78,7 @@ typedef struct
 
 // The set of channels available
 
-static channel_t *channels;
+ channel_t *channels;
 
 // Maximum volume of a sound effect.
 // Internal default is max out of 0-15.

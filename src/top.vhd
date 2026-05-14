@@ -597,6 +597,7 @@ begin
          XBUS_REGSTAGE_EN           => true,                -- add XBUS register stage
 
          -- Processor peripherals --
+		 IO_GPTMR_EN				=> true,
          IO_GPIO_NUM                => 8,                   -- number of GPIO input/output pairs (0..32)
          IO_CLINT_EN                => true,                -- implement core local interruptor (CLINT)
          IO_UART0_EN                => true,                -- implement primary universal asynchronous receiver/transmitter (UART0)

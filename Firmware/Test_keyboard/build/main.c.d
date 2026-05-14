@@ -26,7 +26,9 @@ build/main.c.o: main.c ../../neorv32/sw/lib/include/neorv32.h \
  ../../neorv32/sw/lib/include/neorv32_uart.h \
  ../../neorv32/sw/lib/include/neorv32_wdt.h \
  ../../neorv32/sw/lib/include/neorv32_legacy.h inc/terminal.h \
- ../../neorv32/sw/lib/include/neorv32_spi.h petit_fatfs/pff.h \
+ ../../neorv32/sw/lib/include/neorv32_spi.h \
+ ../../neorv32/sw/lib/include/neorv32_rte.h \
+ ../../neorv32/sw/lib/include/neorv32_gptmr.h petit_fatfs/pff.h \
  petit_fatfs/pffconf.h vga/vga.h vga/../petit_fatfs/pff.h \
  PS2_Keyboard/ps2_kbd.h
 ../../neorv32/sw/lib/include/neorv32.h:
@@ -59,6 +61,8 @@ build/main.c.o: main.c ../../neorv32/sw/lib/include/neorv32.h \
 ../../neorv32/sw/lib/include/neorv32_legacy.h:
 inc/terminal.h:
 ../../neorv32/sw/lib/include/neorv32_spi.h:
+../../neorv32/sw/lib/include/neorv32_rte.h:
+../../neorv32/sw/lib/include/neorv32_gptmr.h:
 petit_fatfs/pff.h:
 petit_fatfs/pffconf.h:
 vga/vga.h:

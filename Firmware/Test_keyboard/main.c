@@ -6,6 +6,8 @@
 #include "neorv32.h"
 #include "terminal.h"
 #include "neorv32_spi.h"
+#include "neorv32_rte.h"
+#include "neorv32_gptmr.h"
 #include "petit_fatfs/pff.h"
 #include "vga/vga.h"
 #include "PS2_Keyboard/ps2_kbd.h"
@@ -182,50 +184,191 @@ void test_vga_scaling() {
     }
 }
 
-// Parametri della funzione
-#define SCALE 20.0f
-#define SPEED 0.1f
 
-void draw_3d_function(float time) {
-    int last_sx = -1, last_sy = -1;
+#define REG_AUDIO_ADDR (*(volatile uint32_t *)(VGA_BASE + 0x20))
 
-    // Cicliamo su una griglia X, Y "mondo"
-    for (float x = -10.0f; x < 10.0f; x += 0.4f) {
-        for (float y = -10.0f; y < 10.0f; y += 0.4f) {
-            
-            // 1. Calcolo della funzione (Sinc circolare)
-            float d = sqrtf(x*x + y*y);
-            float z = 5.0f * sinf(d - time) / (d + 0.5f); // +0.5 per evitare div by zero
+void SB_SendWaveform(const uint8_t* buffer, uint32_t length) {
+    for (uint32_t i = 0; i < length; i++) {
+        // Se la FIFO è piena, l'hardware alza il bit busy (bit 0 di 0x80000000)
+        // Il processore aspetta qui, sincronizzandosi automaticamente
+        while (VGA_IS_BUSY);
 
-            // 2. Proiezione Isometrica Semplice (3D -> 2D)
-            // Trasformiamo coordinate (x, y, z) in (screen_x, screen_y)
-            int sx = (int)((x - y) * cosf(0.523f) * SCALE) + (SCREEN_WIDTH / 2);
-            int sy = (int)((x + y) * sinf(0.523f) * SCALE - (z * SCALE)) + (SCREEN_HEIGHT / 2);
-
-            // 3. Shading base (opzionale)
-            // Più è alto Z, più il colore è tendente al rosso/giallo
-            uint16_t color = (uint16_t)(z * 1000) + 0x07E0; // Esempio colore dinamico
-
-            if (sx >= 0 && sx < SCREEN_WIDTH && sy >= 0 && sy < SCREEN_HEIGHT) {
-                vga_put_pixel(sx, sy, color);
-            }
-        }
+        // Invio del campione (8 bit di Doom -> 12 bit DAC)
+        uint16_t sample12 = (uint16_t)buffer[i] << 4;
+        REG_AUDIO_ADDR = 0x3000 | (sample12 & 0x0FFF);
     }
 }
 
-static uint8_t back_buffer_page = 1; // Pagina su cui DOOM disegna
-static uint8_t front_buffer_page = 0; // Pagina visualizzata sul monitor
+// Impostazioni della nostra SoundBlaster
+#define SAMPLE_RATE 11025
+#define BUFFER_SIZE SAMPLE_RATE // Un buffer da esattamente 1 secondo (circa 11 KB)
+
+// Il buffer in memoria RAM
+uint8_t sound_buffer[BUFFER_SIZE];
+
+
+
+
+
+void test_audio_real() {
+    // Generiamo un suono di 1 secondo (11025 campioni)
+    // Invece di caricarlo, lo calcoliamo matematicamente per semplicità di test
+    // ma lo trattiamo come se fosse un campione PCM 8-bit.
+    
+    while(1) {
+        for (int i = 0; i < 11025; i++) {
+            // Se la FIFO è piena, aspetta (Polling)
+            while (*(volatile uint32_t*)0x40000000 & 0x1); 
+
+            // Crea un effetto "Laser" che scende di tono
+            // (Simula un vero campione dinamico)
+            uint8_t sample = (uint8_t)(128 + 127 * (i % (100 + i/100) > (50 + i/200) ? 1 : -1));
+            
+            // Invia al DAC
+            REG_AUDIO_ADDR = 0x3000 | ((uint16_t)sample << 4);
+        }
+        
+        // Pausa di 2 secondi tra un "bang" e l'altro
+        neorv32_aux_delay_ms(neorv32_sysinfo_get_clk(), 2000);
+    }
+}
+
+/**
+ * Pulisce una riga orizzontale di pixel (640 pixel)
+ * @param y_phys: la coordinata Y fisica in memoria (0-479)
+ */
+void vga_clear_line(int y_phys) {
+    // 1. Imposta la coordinata Y
+    VGA_REG_Y = y_phys;
+    
+    // 2. Imposta X all'inizio
+    VGA_REG_X = 0;
+    
+    // 3. Imposta il colore (Nero = 0x0000)
+    VGA_REG_COLOR = 0x0000;
+
+    // 4. Scrivi 640 pixel. 
+    // Grazie all'auto-incremento X nel VHDL (reg_mode bit 0),
+    // basta scrivere nel registro PIXEL ripetutamente.
+    for (int x = 0; x < 640; x++) {
+        VGA_REG_COLOR = 0x0000; 
+    }
+}
+
+// Variabili globali per lo stato del terminale
+/*int terminal_row = 0;      // Riga corrente (0-29)
+int hardware_offset = 0;   // Offset di scroll attuale (0-479)
+const int FONT_H = 16;     // Altezza del font*/
+
+/*void terminal_println(char* text) {
+    // 1. Calcoliamo dove scrivere fisicamente in memoria
+    // La riga attuale visibile si trova all'offset hardware + (riga logica * altezza font)
+    int y_phys = (hardware_offset + (terminal_row * FONT_H)) % 480;
+
+    // 2. Posizioniamo il cursore e stampiamo
+    vga_set_cursor(0, y_phys);
+    vga_Print(text);
+
+    // 3. Prepariamo la riga successiva
+    if (terminal_row < 29) {
+        // C'è ancora spazio sullo schermo, aumentiamo solo la riga logica
+        terminal_row++;
+    } else {
+        // Siamo all'ultima riga: dobbiamo scrollare l'hardware
+        // L'offset si sposta in avanti di una riga di font
+        hardware_offset = (hardware_offset + FONT_H) % 480;
+        VGA_REG_SCROLL = hardware_offset;
+
+        // Ora dobbiamo pulire la riga che è appena "apparsa" in fondo al monitor.
+        // Fisicamente, questa riga si trova esattamente dove finisce la visualizzazione.
+        int y_to_clear = (hardware_offset + (29 * FONT_H)) % 480;
+        
+        // Usiamo la tua vga_fillRect ottimizzata
+        vga_fillRect(0, y_to_clear, 640, FONT_H, 0x0000);
+        
+        // Restiamo sulla riga 29 (l'ultima)
+        terminal_row = 29;
+    }
+}*/
+
+/*void terminal_run2() {
+    vga_Print("Zerkiolino Terminal Ready...\n");
+    
+    // Posizioniamo il cursore sulla riga successiva a quella del benvenuto
+    terminal_row = 1; 
+
+    while (1) {
+        if (neorv32_uart0_available()) {
+            char c = neorv32_uart0_getc();
+
+            // 1. Echo sulla UART (per vedere sul PC cosa scrivi)
+            neorv32_uart0_putc(c);
+
+            // 2. Gestione INVIO
+            if (c == '\r' || c == '\n') {
+                terminal_row++;
+                
+                // Se superiamo il fondo dello schermo, scrolliamo
+                if (terminal_row >= 30) {
+                    hardware_offset = (hardware_offset + 16) % 480;
+                    VGA_REG_SCROLL = hardware_offset;
+                    
+                    int y_to_clear = (hardware_offset + (29 * 16)) % 480;
+                    vga_fillRect(0, y_to_clear, 640, 16, 0x0000);
+                    
+                    terminal_row = 29;
+                }
+                
+                // Reset posizione X per la nuova riga
+                vga_set_cursor(0, (hardware_offset + (terminal_row * 16)) % 480);
+            } 
+            // 3. Caratteri stampabili
+            else if (c >= 32 && c <= 126) {
+                char str[2] = {c, '\0'};
+                
+                // Calcoliamo la posizione Y attuale e stampiamo il singolo carattere
+                int y_phys = (hardware_offset + (terminal_row * 16)) % 480;
+                
+                // Nota: vga_Print deve mantenere internamente la posizione X 
+                // o devi aggiornare il cursore manualmente qui
+                vga_Print(str); 
+            }
+        }
+    }
+}*/
+
+void terminal_run() {
+    vga_terminal_init(16); // Font 16px
+    vga_terminal_println("Zerkiolino Shell Ready\n");
+
+    while (1) {
+        if (neorv32_uart0_available()) {
+            char c = neorv32_uart0_getc();
+            
+            // Echo sulla UART per il PC
+            neorv32_uart0_putc(c); 
+            
+            // Visualizzazione immediata su VGA
+            vga_terminal_putc(c);
+        }
+    }
+}
 
 /*=======================================================================*/
 /* Main Loop                                                             */
 /*=======================================================================*/
 int main (void) {
+    neorv32_rte_setup();
     // 1. Hardware Init
     if (neorv32_Init() != 0) return(1);
     setup_sd();
     // 2. Welcome Message
     OutputBootMessage();
     neorv32_gpio_port_set(0);
+
+
+   
+
     vga_set_write_page(0);
     vga_set_read_page(0);
     //load_font_to_psram();
@@ -235,25 +378,21 @@ int main (void) {
     vga_set_cursor(0, 0);
     vga_clear(BLACK);
 
-    vga_Print("Zerkiolino RISC-V VGA Test ");
+    //vga_Print("Zerkiolino RISC-V VGA Test \n");
+    vga_terminal_init(12);
+    terminal_run();
 
-
-    float t = 0;
+    // 2. Loop di riproduzione infinito
     while(1) {
-        vga_set_write_page(back_buffer_page);
-        vga_clear(BLACK); // Pulisce il buffer SDRAM
-        draw_3d_function(t);
-        t += SPEED;
-        vga_set_read_page(back_buffer_page);
-        uint8_t temp = front_buffer_page;
-        front_buffer_page = back_buffer_page;
-        back_buffer_page = temp;
+        // Passa l'intero array alla "scheda audio"
+        SB_SendWaveform(sound_buffer, BUFFER_SIZE);
+        
+        // Nota magica: non serve nessun delay software qui!
+        // Il processore girerà a tutta velocità, ma la riga 'while(busy)' 
+        // dentro SB_SendWaveform farà da freno automatico, sincronizzando
+        // l'esecuzione in C con il timer a 11kHz dell'FPGA.
     }
-
-
-    test_vga_scaling();
-    
-    test_autoincrement();
+  
     ps2_event_t ev;
     while(1) {
         if (ps2_get_event(&ev)) {
@@ -272,10 +411,7 @@ int main (void) {
     }
 
 
-//while (1);
-  //vga_load_image_pfs("ZERK.BIN"); // Carica un'immagine da SD (assicurati che sia in RGB565 e 640x480)
-    //neorv32_aux_delay_ms(neorv32_sysinfo_get_clk(), 2000);
-   //vga_load_image_pfs("ZERK.BIN"); // Carica un'immagine da SD (assicurati che sia in RGB565 e 640x480)
+
 
 
    neorv32_aux_delay_ms(neorv32_sysinfo_get_clk(), 1000);

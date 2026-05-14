@@ -27,9 +27,10 @@ build/doomgeneric_neorv32.c.o: doomgeneric/doomgeneric_neorv32.c \
  ../../neorv32/sw/lib/include/neorv32_uart.h \
  ../../neorv32/sw/lib/include/neorv32_wdt.h \
  ../../neorv32/sw/lib/include/neorv32_legacy.h \
- doomgeneric/doomgeneric_neorv32.h doomgeneric/../petit_fatfs/pff.h \
- doomgeneric/../petit_fatfs/pffconf.h doomgeneric/../vga/vga.h \
- doomgeneric/../vga/../petit_fatfs/pff.h
+ doomgeneric/doomgeneric_neorv32.h doomgeneric/i_sound_neorv32.h \
+ doomgeneric/doomtype.h doomgeneric/i_sound.h \
+ doomgeneric/../petit_fatfs/pff.h doomgeneric/../petit_fatfs/pffconf.h \
+ doomgeneric/../vga/vga.h doomgeneric/../vga/../petit_fatfs/pff.h
 doomgeneric/doomgeneric.h:
 ../../neorv32/sw/lib/include/neorv32.h:
 ../../neorv32/sw/lib/include/neorv32_intrinsics.h:
@@ -60,6 +61,9 @@ doomgeneric/doomgeneric.h:
 ../../neorv32/sw/lib/include/neorv32_wdt.h:
 ../../neorv32/sw/lib/include/neorv32_legacy.h:
 doomgeneric/doomgeneric_neorv32.h:
+doomgeneric/i_sound_neorv32.h:
+doomgeneric/doomtype.h:
+doomgeneric/i_sound.h:
 doomgeneric/../petit_fatfs/pff.h:
 doomgeneric/../petit_fatfs/pffconf.h:
 doomgeneric/../vga/vga.h:

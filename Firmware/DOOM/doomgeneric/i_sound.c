@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <neorv32.h>
 #if defined(FEATURE_SOUND) && !defined(__DJGPP__)
 #include <SDL_mixer.h>
 #endif
@@ -25,7 +25,7 @@
 #include "config.h"
 #include "doomfeatures.h"
 #include "doomtype.h"
-
+#include "i_sound_neorv32.h"
 #ifdef ORIGCODE
 #include "gusconf.h"
 #endif
@@ -143,7 +143,19 @@ static void InitMusicModule(void)
 
 void I_InitSound(boolean use_sfx_prefix)
 {  
-    boolean nosound, nosfx, nomusic;
+    // Dichiarazioni esterne per essere sicuri che il linker le veda
+    extern sound_module_t DG_sound_module;
+    extern sound_module_t *sound_module;
+
+    // 1. Forza il puntatore globale a puntare alla tua struttura
+    sound_module = &DG_sound_module;
+
+    // 2. Chiama l'inizializzazione del tuo driver (quello che scrive 0x3800 al DAC)
+    sound_module->Init(use_sfx_prefix);
+
+    // 3. (Opzionale) Debug UART per conferma visiva
+     neorv32_uart0_printf("AUDIO: Driver forzato su NEORV32 DAC\n");
+    /*boolean nosound, nosfx, nomusic;
 
     //!
     // @vanilla
@@ -193,8 +205,9 @@ void I_InitSound(boolean use_sfx_prefix)
         {
             InitMusicModule();
         }
-    }
 
+    }
+*/
 }
 
 void I_ShutdownSound(void)

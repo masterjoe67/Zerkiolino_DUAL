@@ -51,7 +51,7 @@ APP_SRC +=  d_net.c d_items.c g_game.c m_menu.c m_misc.c p_doors.c w_file.c stat
            f_finale.c f_wipe.c d_event.c d_mode.c i_system.c i_video.c \
            st_lib.c st_stuff.c p_map.c p_maputl.c doomstat.c p_lights.c\
            p_inter.c p_mobj.c p_enemy.c p_pspr.c p_spec.c r_bsp.c \
-           r_data.c r_draw.c r_plane.c r_segs.c r_sky.c r_things.c w_main.c \
+           r_data.c r_draw.c r_plane.c r_segs.c r_sky.c r_things.c w_main.c i_sound_neorv32.c \
            w_wad.c wi_stuff.c p_ceilng.c w_file_stdc.c w_file.c dstrings.c d_main.c dummy.c
 
 # Percorsi include

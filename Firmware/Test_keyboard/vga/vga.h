@@ -10,12 +10,13 @@
 #define SCREEN_HEIGHT 480
 
 // Registri Dati (Preparano i fili interni del Subsystem)
-#define VGA_REG_X         (*(volatile uint32_t*)(VGA_BASE + 0x04)) // Cmd 001
-#define VGA_REG_Y         (*(volatile uint32_t*)(VGA_BASE + 0x08)) // Cmd 010
-#define VGA_REG_COLOR     (*(volatile uint32_t*)(VGA_BASE + 0x0C)) // Cmd 011
-#define VGA_REG_WPAGE     (*(volatile uint32_t*)(VGA_BASE + 0x10)) // Cmd 100
-#define VGA_REG_RPAGE     (*(volatile uint32_t*)(VGA_BASE + 0x14)) // Cmd 101
-#define VGA_REG_MODE      (*(volatile uint16_t*)(VGA_BASE + 0x1C)) // Cmd 111
+#define VGA_REG_X         (*(volatile uint32_t*)(VGA_BASE + 0x04)) // Cmd 0001
+#define VGA_REG_Y         (*(volatile uint32_t*)(VGA_BASE + 0x08)) // Cmd 0010
+#define VGA_REG_COLOR     (*(volatile uint32_t*)(VGA_BASE + 0x0C)) // Cmd 0011
+#define VGA_REG_WPAGE     (*(volatile uint32_t*)(VGA_BASE + 0x10)) // Cmd 0100
+#define VGA_REG_RPAGE     (*(volatile uint32_t*)(VGA_BASE + 0x14)) // Cmd 0101
+#define VGA_REG_MODE      (*(volatile uint16_t*)(VGA_BASE + 0x1C)) // Cmd 0111
+#define VGA_REG_SCROLL    (*(volatile uint32_t*)(VGA_BASE + 0x24))
 
 // Colori Base RGB565
 #define BLACK     0x0000
@@ -61,6 +62,10 @@ void vga_setTextSize(uint8_t s);
 void vga_setTextColor(uint16_t c, uint16_t b);
 void vga_Print(const char *str);
 size_t vga_write(uint8_t uniCode);
+void vga_terminal_init(int h);
+void vga_terminal_putc(char c);
+void vga_terminal_print(const char* s);
+void vga_terminal_println(const char* s);
 
 
 
